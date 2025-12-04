@@ -1,0 +1,47 @@
+{
+  "youtube": {
+    "categories": [
+      "real estate",
+      "real estate marketing",
+      "AI automation real estate",
+      "real estate agent tips",
+      "property management automation"
+    ],
+    "categoriesPt": [
+      "imobiliária",
+      "marketing imobiliário",
+      "automação imobiliária",
+      "corretor de imóveis",
+      "gestão imobiliária IA"
+    ],
+    "maxResults": 50,
+    "regionCodes": {
+      "en": "US",
+      "pt": "BR"
+    }
+  },
+  "trends": {
+    "keywords": [
+      "real estate AI",
+      "AI automation agency",
+      "real estate marketing",
+      "property management software",
+      "real estate lead generation"
+    ],
+    "keywordsPt": [
+      "imobiliária IA",
+      "automação imobiliária",
+      "marketing imobiliário",
+      "CRM imobiliário",
+      "captação de leads imobiliária"
+    ],
+    "geo": {
+      "en": "US",
+      "pt": "BR"
+    }
+  },
+  "cache": {
+    "ttlHours": 6
+  }
+}
+
