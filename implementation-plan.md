@@ -1,6 +1,7 @@
 # YouTube & Google Trends Scraper - Implementation Plan
 
 ## Overview
+
 Build a modular CLI script using Bun to fetch YouTube trending videos and Google Trends rising data for real estate AI automation content ideas, with SQLite caching and JSON export.
 
 ---
@@ -8,15 +9,18 @@ Build a modular CLI script using Bun to fetch YouTube trending videos and Google
 ## Progress Tracker
 
 ### Phase 1: Project Setup
+
 - [x] Install dependencies (`googleapis`, `google-trends-api`)
 - [x] Create `config.json` with keywords and settings
 - [x] Create TypeScript types (`src/types.ts`)
 
 ### Phase 2: Database Layer
+
 - [x] Create SQLite database schema (`src/db/sqlite.ts`)
 - [x] Implement cache helper functions (check TTL, store timestamp)
 
 ### Phase 3: Data Fetchers
+
 - [x] Implement YouTube Data API fetcher (`src/fetchers/youtube.ts`)
   - [x] Fetch trending videos for English (US region)
   - [x] Fetch trending videos for Portuguese (BR region)
@@ -25,6 +29,7 @@ Build a modular CLI script using Bun to fetch YouTube trending videos and Google
   - [x] Fetch rising trends for Portuguese keywords
 
 ### Phase 4: Export & CLI
+
 - [x] Implement JSON export functionality (`src/export.ts`)
 - [x] Wire up CLI argument parsing (`src/index.ts`)
   - [x] `--step=youtube` - Fetch only YouTube data
@@ -34,6 +39,7 @@ Build a modular CLI script using Bun to fetch YouTube trending videos and Google
   - [x] `--export` - Export results to JSON
 
 ### Phase 5: Testing & Refinement
+
 - [x] Test YouTube fetcher with API key
 - [x] Test Google Trends fetcher
 - [x] Test caching behavior
@@ -67,7 +73,7 @@ YOUTUBE_API_KEY=your_api_key_here
 ---
 
 ## Notes
+
 - Using Bun's native `bun:sqlite` for database
 - Functional programming approach (no classes)
 - Cache TTL: 6 hours by default
-

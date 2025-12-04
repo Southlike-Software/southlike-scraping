@@ -178,8 +178,9 @@ const createTrendingTopic = (
   geo: string,
   fetchedAt: string
 ): TrendingTopic => {
-  const isBreakout =
-    query.formattedValue?.toLowerCase().includes("breakout") || false;
+  const isBreakout = (query.formattedValue?.toLowerCase() ?? "").includes(
+    "breakout"
+  );
 
   // Parse value - could be a number or "Breakout"
   let value = 0;
