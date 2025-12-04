@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Content Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #475569;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:disabled {
+      background: var(--bg-tertiary);
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .trend-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .trend-query {
+      font-weight: 500;
+    }
+
+    .trend-meta {
+      display: flex;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-breakout {
+      background: var(--danger);
+      color: white;
+    }
+
+    .badge-rising {
+      background: var(--success);
+      color: white;
+    }
+
+    .badge-high {
+      background: var(--success);
+    }
+
+    .badge-medium {
+      background: var(--warning);
+    }
+
+    .badge-low {
+      background: var(--text-secondary);
+    }
+
+    .idea-card {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .idea-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .idea-hook {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .idea-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .idea-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .script-section {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .script-section h4 {
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .script-content {
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .calendar-entry {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .calendar-date {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .calendar-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // API Client
+    const api = {
+      async get(endpoint) {
+        const res = await fetch(`/api${endpoint}`);
+        if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+        return res.json();
+      },
+      async post(endpoint, data = {}) {
+        const res = await fetch(`/api${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+        return res.json();
+      },
+      async put(endpoint, data = {}) {
+        const res = await fetch(`/api${endpoint}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+        return res.json();
+      },
+    };
+
+    // Stats Component
+    function Stats({ trends, videos, ideas, scripts }) {
+      const breakouts = trends.filter(t => t.isBreakout).length;
+      return (
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="stat-value">{trends.length}</div>
+            <div className="stat-label">Trends</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{breakouts}</div>
+            <div className="stat-label">Breakouts</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{videos.length}</div>
+            <div className="stat-label">Videos</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{ideas.length}</div>
+            <div className="stat-label">Ideas</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Trends Tab
+    function TrendsTab({ trends, language, setLanguage }) {
+      const filtered = language === 'all' 
+        ? trends 
+        : trends.filter(t => t.language === language);
+      
+      const breakouts = filtered.filter(t => t.isBreakout);
+      const rising = filtered.filter(t => !t.isBreakout).slice(0, 20);
+
+      return (
+        <div>
+          <div className="filter-bar">
+            <select value={language} onChange={e => setLanguage(e.target.value)}>
+              <option value="all">All Languages</option>
+              <option value="en">English (US)</option>
+              <option value="pt">Portuguese (BR)</option>
+            </select>
+          </div>
+
+          {breakouts.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">🚀 Breakout Trends</h3>
+                <span className="badge badge-breakout">{breakouts.length}</span>
+              </div>
+              {breakouts.map(trend => (
+                <div key={trend.id} className="trend-item">
+                  <div>
+                    <div className="trend-query">{trend.relatedQuery}</div>
+                    <div className="trend-meta">
+                      <span>From: {trend.keyword}</span>
+                      <span>{trend.language.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <span className="badge badge-breakout">BREAKOUT</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">📈 Rising Trends</h3>
+            </div>
+            {rising.length === 0 ? (
+              <div className="empty-state">No rising trends found</div>
+            ) : (
+              rising.map(trend => (
+                <div key={trend.id} className="trend-item">
+                  <div>
+                    <div className="trend-query">{trend.relatedQuery}</div>
+                    <div className="trend-meta">
+                      <span>From: {trend.keyword}</span>
+                      <span>{trend.language.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <span className="badge badge-rising">+{trend.value}%</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Ideas Tab
+    function IdeasTab({ ideas, onRefresh, onGenerateScript }) {
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [count, setCount] = useState(5);
+      const [language, setLanguage] = useState('en');
+
+      const generateIdeas = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          await api.post('/ai/ideas', { count, language });
+          onRefresh();
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div>
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">🤖 Generate New Ideas</h3>
+            </div>
+            <div className="filter-bar">
+              <select value={count} onChange={e => setCount(Number(e.target.value))}>
+                <option value={3}>3 ideas</option>
+                <option value={5}>5 ideas</option>
+                <option value={10}>10 ideas</option>
+              </select>
+              <select value={language} onChange={e => setLanguage(e.target.value)}>
+                <option value="en">English</option>
+                <option value="pt">Portuguese</option>
+              </select>
+              <button className="btn btn-primary" onClick={generateIdeas} disabled={loading}>
+                {loading ? 'Generating...' : 'Generate Ideas'}
+              </button>
+            </div>
+            {error && <div className="error">{error}</div>}
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">💡 Video Ideas ({ideas.length})</h3>
+            </div>
+            {ideas.length === 0 ? (
+              <div className="empty-state">No ideas yet. Generate some above!</div>
+            ) : (
+              ideas.map(idea => (
+                <div key={idea.id} className="idea-card">
+                  <div className="idea-title">{idea.title}</div>
+                  <div className="idea-hook">{idea.hook}</div>
+                  <div className="idea-meta">
+                    <span className={`badge badge-${idea.estimatedViews}`}>
+                      {idea.estimatedViews} potential
+                    </span>
+                    <span className="badge">{idea.language.toUpperCase()}</span>
+                    <span style={{color: 'var(--text-secondary)', fontSize: '12px'}}>
+                      Source: {idea.trendSource}
+                    </span>
+                  </div>
+                  <div className="idea-actions">
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={() => onGenerateScript(idea)}
+                    >
+                      Generate Script
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Scripts Tab
+    function ScriptsTab({ scripts, ideas }) {
+      const [selectedScript, setSelectedScript] = useState(null);
+      const [loading, setLoading] = useState(false);
+
+      const viewScript = async (scriptId) => {
+        setLoading(true);
+        try {
+          const script = await api.get(`/scripts/${scriptId}`);
+          setSelectedScript(script);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      if (selectedScript) {
+        return (
+          <div>
+            <button className="btn btn-secondary" onClick={() => setSelectedScript(null)}>
+              ← Back to Scripts
+            </button>
+            <div className="card" style={{marginTop: '16px'}}>
+              <h3 className="card-title" style={{marginBottom: '16px'}}>
+                {ideas.find(i => i.id === selectedScript.ideaId)?.title || 'Script'}
+              </h3>
+              
+              <div className="script-section">
+                <h4>🎬 Hook</h4>
+                <div className="script-content">{selectedScript.hook}</div>
+              </div>
+              
+              <div className="script-section">
+                <h4>📢 Intro</h4>
+                <div className="script-content">{selectedScript.intro}</div>
+              </div>
+              
+              {selectedScript.sections.map((section, i) => (
+                <div key={i} className="script-section">
+                  <h4>{section.title} ({section.duration})</h4>
+                  <div className="script-content">{section.content}</div>
+                </div>
+              ))}
+              
+              <div className="script-section">
+                <h4>🎯 Call to Action</h4>
+                <div className="script-content">{selectedScript.cta}</div>
+              </div>
+
+              <div className="script-section">
+                <h4>🏷️ Suggested Tags</h4>
+                <div className="idea-meta">
+                  {selectedScript.tags.map(tag => (
+                    <span key={tag} className="badge">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">📝 Generated Scripts ({scripts.length})</h3>
+          </div>
+          {scripts.length === 0 ? (
+            <div className="empty-state">No scripts yet. Generate one from an idea!</div>
+          ) : (
+            scripts.map(script => {
+              const idea = ideas.find(i => i.id === script.ideaId);
+              return (
+                <div key={script.id} className="idea-card">
+                  <div className="idea-title">{idea?.title || 'Untitled'}</div>
+                  <div className="idea-meta">
+                    <span className="badge">{script.estimatedDuration}</span>
+                  </div>
+                  <button className="btn btn-secondary" onClick={() => viewScript(script.id)}>
+                    View Full Script
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      );
+    }
+
+    // Calendar Tab
+    function CalendarTab({ calendar, ideas, onRefresh }) {
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      const generateCalendar = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          await api.post('/ai/calendar', { videosPerWeek: 3 });
+          onRefresh();
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div>
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">📅 Content Calendar</h3>
+              <button className="btn btn-primary" onClick={generateCalendar} disabled={loading || ideas.length === 0}>
+                {loading ? 'Generating...' : 'Generate Calendar'}
+              </button>
+            </div>
+            {error && <div className="error">{error}</div>}
+            {ideas.length === 0 && (
+              <div className="empty-state">Generate some video ideas first!</div>
+            )}
+          </div>
+
+          {calendar.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Upcoming Content</h3>
+              </div>
+              {calendar.map(entry => (
+                <div key={entry.id} className="calendar-entry">
+                  <div className="calendar-date">
+                    {entry.dayOfWeek}, {entry.scheduledDate} • {entry.timeSlot}
+                  </div>
+                  <div className="calendar-title">{entry.ideaTitle}</div>
+                  <div className="idea-meta">
+                    <span className="badge">{entry.contentType}</span>
+                    <span className="badge">Priority: {entry.priority}/10</span>
+                    <span className="badge">{entry.status}</span>
+                  </div>
+                  <div style={{fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px'}}>
+                    {entry.reasoning}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Main App
+    function App() {
+      const [activeTab, setActiveTab] = useState('trends');
+      const [loading, setLoading] = useState(true);
+      const [trends, setTrends] = useState([]);
+      const [videos, setVideos] = useState([]);
+      const [ideas, setIdeas] = useState([]);
+      const [scripts, setScripts] = useState([]);
+      const [calendar, setCalendar] = useState([]);
+      const [language, setLanguage] = useState('all');
+      const [generatingScript, setGeneratingScript] = useState(false);
+
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const [data, ideasData, scriptsData, calendarData] = await Promise.all([
+            api.get('/data'),
+            api.get('/ideas'),
+            api.get('/scripts'),
+            api.get('/calendar'),
+          ]);
+          setTrends(data.trends || []);
+          setVideos(data.youtube || []);
+          setIdeas(ideasData.ideas || []);
+          setScripts(scriptsData.scripts || []);
+          setCalendar(calendarData.entries || []);
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchData();
+      }, []);
+
+      const handleGenerateScript = async (idea) => {
+        setGeneratingScript(true);
+        try {
+          await api.post(`/ai/script/${idea.id}`, { duration: 'medium' });
+          fetchData();
+          setActiveTab('scripts');
+        } catch (err) {
+          alert('Failed to generate script: ' + err.message);
+        } finally {
+          setGeneratingScript(false);
+        }
+      };
+
+      if (loading) {
+        return (
+          <div className="app">
+            <div className="loading">
+              <div className="spinner"></div>
+              Loading dashboard...
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="app">
+          <header>
+            <h1>🎬 AI Video Content Dashboard</h1>
+            <button className="btn btn-secondary" onClick={fetchData}>
+              Refresh Data
+            </button>
+          </header>
+
+          <Stats trends={trends} videos={videos} ideas={ideas} scripts={scripts} />
+
+          <div className="tabs">
+            <button 
+              className={`tab ${activeTab === 'trends' ? 'active' : ''}`}
+              onClick={() => setActiveTab('trends')}
+            >
+              📈 Trends
+            </button>
+            <button 
+              className={`tab ${activeTab === 'ideas' ? 'active' : ''}`}
+              onClick={() => setActiveTab('ideas')}
+            >
+              💡 Ideas
+            </button>
+            <button 
+              className={`tab ${activeTab === 'scripts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('scripts')}
+            >
+              📝 Scripts
+            </button>
+            <button 
+              className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+              onClick={() => setActiveTab('calendar')}
+            >
+              📅 Calendar
+            </button>
+          </div>
+
+          {generatingScript && (
+            <div className="card">
+              <div className="loading">
+                <div className="spinner"></div>
+                Generating script with AI...
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'trends' && (
+            <TrendsTab 
+              trends={trends} 
+              language={language} 
+              setLanguage={setLanguage} 
+            />
+          )}
+          {activeTab === 'ideas' && (
+            <IdeasTab 
+              ideas={ideas} 
+              onRefresh={fetchData}
+              onGenerateScript={handleGenerateScript}
+            />
+          )}
+          {activeTab === 'scripts' && (
+            <ScriptsTab scripts={scripts} ideas={ideas} />
+          )}
+          {activeTab === 'calendar' && (
+            <CalendarTab 
+              calendar={calendar} 
+              ideas={ideas}
+              onRefresh={fetchData}
+            />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

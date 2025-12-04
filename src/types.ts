@@ -86,6 +86,9 @@ export interface CLIOptions {
   step: Step;
   noCache: boolean;
   export: boolean;
+  analyze: boolean;
+  lang: Language;
+  count: number;
 }
 
 // ============================================================================
@@ -96,5 +99,65 @@ export interface ExportData {
   exportedAt: string;
   youtube: YouTubeVideo[];
   trends: TrendingTopic[];
+}
+
+// ============================================================================
+// AI-Generated Content Types
+// ============================================================================
+
+export interface VideoIdea {
+  id: string;
+  title: string;
+  hook: string;
+  targetAudience: string;
+  trendSource: string;
+  estimatedViews: "low" | "medium" | "high";
+  reasoning: string;
+  language: Language;
+  createdAt: string;
+}
+
+export interface VideoScriptSection {
+  title: string;
+  content: string;
+  duration: string;
+}
+
+export interface VideoScript {
+  id: string;
+  ideaId: string;
+  hook: string;
+  intro: string;
+  sections: VideoScriptSection[];
+  cta: string;
+  fullScript: string;
+  estimatedDuration: string;
+  thumbnailIdeas: string[];
+  tags: string[];
+  createdAt: string;
+}
+
+export type ContentType =
+  | "tutorial"
+  | "news"
+  | "case_study"
+  | "tips"
+  | "comparison"
+  | "deep_dive";
+
+export type CalendarStatus = "planned" | "in_progress" | "published" | "cancelled";
+
+export interface ContentCalendarEntry {
+  id: string;
+  ideaId: string;
+  ideaTitle: string;
+  scheduledDate: string;
+  dayOfWeek: string;
+  timeSlot: string;
+  priority: number;
+  reasoning: string;
+  contentType: ContentType;
+  status: CalendarStatus;
+  createdAt: string;
 }
 
