@@ -8,13 +8,13 @@ Build a modular CLI script using Bun to fetch YouTube trending videos and Google
 ## Progress Tracker
 
 ### Phase 1: Project Setup
-- [ ] Install dependencies (`googleapis`, `google-trends-api`)
-- [ ] Create `config.json` with keywords and settings
-- [ ] Create TypeScript types (`src/types.ts`)
+- [x] Install dependencies (`googleapis`, `google-trends-api`)
+- [x] Create `config.json` with keywords and settings
+- [x] Create TypeScript types (`src/types.ts`)
 
 ### Phase 2: Database Layer
-- [ ] Create SQLite database schema (`src/db/sqlite.ts`)
-- [ ] Implement cache helper functions (check TTL, store timestamp)
+- [x] Create SQLite database schema (`src/db/sqlite.ts`)
+- [x] Implement cache helper functions (check TTL, store timestamp)
 
 ### Phase 3: Data Fetchers
 - [ ] Implement YouTube Data API fetcher (`src/fetchers/youtube.ts`)
