@@ -7,6 +7,10 @@ import type {
   CacheMeta,
   CacheSource,
   Language,
+  VideoIdea,
+  VideoScript,
+  ContentCalendarEntry,
+  CalendarStatus,
 } from "../types";
 import { getConfig } from "../config";
 
@@ -73,10 +77,58 @@ const initializeSchema = (database: Database): void => {
       PRIMARY KEY (source, language)
     );
 
+    -- AI-generated video ideas
+    CREATE TABLE IF NOT EXISTS video_ideas (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      hook TEXT NOT NULL,
+      target_audience TEXT NOT NULL,
+      trend_source TEXT NOT NULL,
+      estimated_views TEXT NOT NULL,
+      reasoning TEXT,
+      language TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    -- Generated video scripts
+    CREATE TABLE IF NOT EXISTS video_scripts (
+      id TEXT PRIMARY KEY,
+      idea_id TEXT NOT NULL REFERENCES video_ideas(id),
+      hook TEXT NOT NULL,
+      intro TEXT NOT NULL,
+      sections TEXT NOT NULL,
+      cta TEXT NOT NULL,
+      full_script TEXT NOT NULL,
+      estimated_duration TEXT,
+      thumbnail_ideas TEXT,
+      tags TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    -- Content calendar entries
+    CREATE TABLE IF NOT EXISTS content_calendar (
+      id TEXT PRIMARY KEY,
+      idea_id TEXT NOT NULL REFERENCES video_ideas(id),
+      idea_title TEXT NOT NULL,
+      scheduled_date TEXT NOT NULL,
+      day_of_week TEXT NOT NULL,
+      time_slot TEXT,
+      priority INTEGER DEFAULT 5,
+      reasoning TEXT,
+      content_type TEXT NOT NULL,
+      status TEXT DEFAULT 'planned',
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_youtube_language ON youtube_videos(language);
     CREATE INDEX IF NOT EXISTS idx_youtube_fetched ON youtube_videos(fetched_at);
     CREATE INDEX IF NOT EXISTS idx_trends_language ON google_trends(language);
     CREATE INDEX IF NOT EXISTS idx_trends_fetched ON google_trends(fetched_at);
+    CREATE INDEX IF NOT EXISTS idx_ideas_language ON video_ideas(language);
+    CREATE INDEX IF NOT EXISTS idx_ideas_created ON video_ideas(created_at);
+    CREATE INDEX IF NOT EXISTS idx_scripts_idea ON video_scripts(idea_id);
+    CREATE INDEX IF NOT EXISTS idx_calendar_date ON content_calendar(scheduled_date);
+    CREATE INDEX IF NOT EXISTS idx_calendar_status ON content_calendar(status);
   `);
 };
 
@@ -189,8 +241,8 @@ export const getYouTubeVideos = (language?: Language): YouTubeVideo[] => {
 
   const results = language
     ? database
-        .query<Record<string, unknown>, [string]>(query)
-        .all(language)
+      .query<Record<string, unknown>, [string]>(query)
+      .all(language)
     : database.query<Record<string, unknown>, []>(query).all();
 
   return results.map(mapRowToYouTubeVideo);
@@ -252,8 +304,8 @@ export const getTrendingTopics = (language?: Language): TrendingTopic[] => {
 
   const results = language
     ? database
-        .query<Record<string, unknown>, [string]>(query)
-        .all(language)
+      .query<Record<string, unknown>, [string]>(query)
+      .all(language)
     : database.query<Record<string, unknown>, []>(query).all();
 
   return results.map(mapRowToTrendingTopic);
@@ -269,6 +321,233 @@ const mapRowToTrendingTopic = (row: Record<string, unknown>): TrendingTopic => (
   language: row.language as Language,
   geo: row.geo as string,
   fetchedAt: row.fetched_at as string,
+});
+
+// ============================================================================
+// Video Ideas Operations
+// ============================================================================
+
+export const saveVideoIdeas = (ideas: VideoIdea[]): void => {
+  const database = getDb();
+  const stmt = database.prepare(`
+    INSERT OR REPLACE INTO video_ideas 
+    (id, title, hook, target_audience, trend_source, estimated_views, reasoning, language, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const insertMany = database.transaction((items: VideoIdea[]) => {
+    for (const idea of items) {
+      stmt.run(
+        idea.id,
+        idea.title,
+        idea.hook,
+        idea.targetAudience,
+        idea.trendSource,
+        idea.estimatedViews,
+        idea.reasoning,
+        idea.language,
+        idea.createdAt
+      );
+    }
+  });
+
+  insertMany(ideas);
+};
+
+export const getVideoIdeas = (language?: Language): VideoIdea[] => {
+  const database = getDb();
+
+  const query = language
+    ? "SELECT * FROM video_ideas WHERE language = ? ORDER BY created_at DESC"
+    : "SELECT * FROM video_ideas ORDER BY created_at DESC";
+
+  const results = language
+    ? database.query<Record<string, unknown>, [string]>(query).all(language)
+    : database.query<Record<string, unknown>, []>(query).all();
+
+  return results.map(mapRowToVideoIdea);
+};
+
+export const getVideoIdeaById = (id: string): VideoIdea | null => {
+  const database = getDb();
+  const result = database
+    .query<Record<string, unknown>, [string]>(
+      "SELECT * FROM video_ideas WHERE id = ?"
+    )
+    .get(id);
+
+  return result ? mapRowToVideoIdea(result) : null;
+};
+
+const mapRowToVideoIdea = (row: Record<string, unknown>): VideoIdea => ({
+  id: row.id as string,
+  title: row.title as string,
+  hook: row.hook as string,
+  targetAudience: row.target_audience as string,
+  trendSource: row.trend_source as string,
+  estimatedViews: row.estimated_views as "low" | "medium" | "high",
+  reasoning: row.reasoning as string,
+  language: row.language as Language,
+  createdAt: row.created_at as string,
+});
+
+// ============================================================================
+// Video Scripts Operations
+// ============================================================================
+
+export const saveVideoScript = (script: VideoScript): void => {
+  const database = getDb();
+  database.run(
+    `INSERT OR REPLACE INTO video_scripts 
+     (id, idea_id, hook, intro, sections, cta, full_script, estimated_duration, thumbnail_ideas, tags, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      script.id,
+      script.ideaId,
+      script.hook,
+      script.intro,
+      JSON.stringify(script.sections),
+      script.cta,
+      script.fullScript,
+      script.estimatedDuration,
+      JSON.stringify(script.thumbnailIdeas),
+      JSON.stringify(script.tags),
+      script.createdAt,
+    ]
+  );
+};
+
+export const getVideoScripts = (ideaId?: string): VideoScript[] => {
+  const database = getDb();
+
+  const query = ideaId
+    ? "SELECT * FROM video_scripts WHERE idea_id = ? ORDER BY created_at DESC"
+    : "SELECT * FROM video_scripts ORDER BY created_at DESC";
+
+  const results = ideaId
+    ? database.query<Record<string, unknown>, [string]>(query).all(ideaId)
+    : database.query<Record<string, unknown>, []>(query).all();
+
+  return results.map(mapRowToVideoScript);
+};
+
+export const getVideoScriptById = (id: string): VideoScript | null => {
+  const database = getDb();
+  const result = database
+    .query<Record<string, unknown>, [string]>(
+      "SELECT * FROM video_scripts WHERE id = ?"
+    )
+    .get(id);
+
+  return result ? mapRowToVideoScript(result) : null;
+};
+
+const mapRowToVideoScript = (row: Record<string, unknown>): VideoScript => ({
+  id: row.id as string,
+  ideaId: row.idea_id as string,
+  hook: row.hook as string,
+  intro: row.intro as string,
+  sections: JSON.parse(row.sections as string),
+  cta: row.cta as string,
+  fullScript: row.full_script as string,
+  estimatedDuration: row.estimated_duration as string,
+  thumbnailIdeas: JSON.parse(row.thumbnail_ideas as string),
+  tags: JSON.parse(row.tags as string),
+  createdAt: row.created_at as string,
+});
+
+// ============================================================================
+// Content Calendar Operations
+// ============================================================================
+
+export const saveCalendarEntries = (entries: ContentCalendarEntry[]): void => {
+  const database = getDb();
+  const stmt = database.prepare(`
+    INSERT OR REPLACE INTO content_calendar 
+    (id, idea_id, idea_title, scheduled_date, day_of_week, time_slot, priority, reasoning, content_type, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const insertMany = database.transaction((items: ContentCalendarEntry[]) => {
+    for (const entry of items) {
+      stmt.run(
+        entry.id,
+        entry.ideaId,
+        entry.ideaTitle,
+        entry.scheduledDate,
+        entry.dayOfWeek,
+        entry.timeSlot,
+        entry.priority,
+        entry.reasoning,
+        entry.contentType,
+        entry.status,
+        entry.createdAt
+      );
+    }
+  });
+
+  insertMany(entries);
+};
+
+export const getCalendarEntries = (options?: {
+  status?: CalendarStatus;
+  fromDate?: string;
+  toDate?: string;
+}): ContentCalendarEntry[] => {
+  const database = getDb();
+
+  let query = "SELECT * FROM content_calendar WHERE 1=1";
+  const params: string[] = [];
+
+  if (options?.status) {
+    query += " AND status = ?";
+    params.push(options.status);
+  }
+
+  if (options?.fromDate) {
+    query += " AND scheduled_date >= ?";
+    params.push(options.fromDate);
+  }
+
+  if (options?.toDate) {
+    query += " AND scheduled_date <= ?";
+    params.push(options.toDate);
+  }
+
+  query += " ORDER BY scheduled_date ASC, priority DESC";
+
+  const results = database
+    .query<Record<string, unknown>, string[]>(query)
+    .all(...params);
+
+  return results.map(mapRowToCalendarEntry);
+};
+
+export const updateCalendarEntryStatus = (
+  id: string,
+  status: CalendarStatus
+): void => {
+  const database = getDb();
+  database.run("UPDATE content_calendar SET status = ? WHERE id = ?", [
+    status,
+    id,
+  ]);
+};
+
+const mapRowToCalendarEntry = (
+  row: Record<string, unknown>
+): ContentCalendarEntry => ({
+  id: row.id as string,
+  ideaId: row.idea_id as string,
+  ideaTitle: row.idea_title as string,
+  scheduledDate: row.scheduled_date as string,
+  dayOfWeek: row.day_of_week as string,
+  timeSlot: row.time_slot as string,
+  priority: row.priority as number,
+  reasoning: row.reasoning as string,
+  contentType: row.content_type as ContentCalendarEntry["contentType"],
+  status: row.status as CalendarStatus,
+  createdAt: row.created_at as string,
 });
 
 // ============================================================================

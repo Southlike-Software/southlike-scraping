@@ -10,6 +10,8 @@ A CLI tool that scrapes YouTube and Google Trends data to discover trending topi
 - **SQLite Caching** - Avoids rate limits with configurable TTL
 - **JSON Export** - Export scraped data for analysis
 - **Step-by-Step Execution** - Run fetchers independently for easier debugging
+- **AI-Powered Analysis** - Generate video ideas, scripts, and content calendars using Claude
+- **Web Dashboard** - Interactive UI to visualize trends and manage AI-generated content
 
 ## Requirements
 
@@ -35,6 +37,7 @@ Create a `.env` file in the project root:
 
 ```env
 YOUTUBE_API_KEY=your_youtube_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
 
 ### Keywords Configuration
@@ -94,7 +97,43 @@ bun run scrape --help
 | `--step=<step>` | `-s`  | Step to run: `youtube`, `trends`, or `all` (default: `all`) |
 | `--no-cache`    |       | Disable cache, always fetch fresh data                      |
 | `--export`      | `-e`  | Export results to JSON after fetching                       |
+| `--analyze`     | `-a`  | Generate AI video ideas after fetching                      |
+| `--lang=<lang>` | `-l`  | Language for AI: `en` or `pt` (default: `en`)               |
+| `--count=<n>`   | `-c`  | Number of AI ideas to generate (default: `5`)               |
 | `--help`        | `-h`  | Show help message                                           |
+
+### AI Commands
+
+```bash
+# Generate video ideas from cached data
+bun run ai:ideas
+
+# Generate with options
+bun run ai ideas -l=pt -c=10        # 10 Portuguese ideas
+
+# Generate a script for a video idea
+bun run ai script -i=<idea-id>
+
+# Generate a weekly content calendar
+bun run ai:calendar
+
+# List saved video ideas
+bun run ai list
+```
+
+### Web Dashboard
+
+Start the interactive dashboard to visualize your data and AI-generated content:
+
+```bash
+# Development mode (with hot reload)
+bun run dev
+
+# Production mode
+bun run start
+```
+
+Open http://localhost:3000 to access the dashboard.
 
 ## Output
 
@@ -171,9 +210,18 @@ When using `--export`, data is saved to `exports/scraper-export-<timestamp>.json
 ```
 src/
 ├── index.ts              # CLI entry point
+├── ai-cli.ts             # AI commands CLI
 ├── config.ts             # Configuration loader
 ├── types.ts              # TypeScript interfaces
 ├── export.ts             # JSON export & summary
+├── ai/
+│   ├── index.ts          # AI module exports
+│   ├── client.ts         # Anthropic client setup
+│   ├── prompts.ts        # AI system prompts
+│   └── generators/
+│       ├── video-ideas.ts     # Video idea generation
+│       ├── video-scripts.ts   # Script generation
+│       └── content-calendar.ts # Calendar planning
 ├── db/
 │   └── sqlite.ts         # SQLite database & caching
 ├── fetchers/
@@ -181,6 +229,10 @@ src/
 │   └── google-trends.ts  # Google Trends fetcher
 └── types/
     └── google-trends-api.d.ts  # Type declarations
+
+web/
+├── server.ts             # Bun HTTP server + API
+└── index.html            # React dashboard SPA
 
 config.json               # Keywords & settings
 data/                     # SQLite database (gitignored)
