@@ -17,27 +17,27 @@ Build a modular CLI script using Bun to fetch YouTube trending videos and Google
 - [x] Implement cache helper functions (check TTL, store timestamp)
 
 ### Phase 3: Data Fetchers
-- [ ] Implement YouTube Data API fetcher (`src/fetchers/youtube.ts`)
-  - [ ] Fetch trending videos for English (US region)
-  - [ ] Fetch trending videos for Portuguese (BR region)
-- [ ] Implement Google Trends fetcher (`src/fetchers/google-trends.ts`)
-  - [ ] Fetch rising trends for English keywords
-  - [ ] Fetch rising trends for Portuguese keywords
+- [x] Implement YouTube Data API fetcher (`src/fetchers/youtube.ts`)
+  - [x] Fetch trending videos for English (US region)
+  - [x] Fetch trending videos for Portuguese (BR region)
+- [x] Implement Google Trends fetcher (`src/fetchers/google-trends.ts`)
+  - [x] Fetch rising trends for English keywords
+  - [x] Fetch rising trends for Portuguese keywords
 
 ### Phase 4: Export & CLI
-- [ ] Implement JSON export functionality (`src/export.ts`)
-- [ ] Wire up CLI argument parsing (`src/index.ts`)
-  - [ ] `--step=youtube` - Fetch only YouTube data
-  - [ ] `--step=trends` - Fetch only Google Trends data
-  - [ ] `--step=all` - Run all fetchers (default)
-  - [ ] `--no-cache` - Disable cache reads
-  - [ ] `--export` - Export results to JSON
+- [x] Implement JSON export functionality (`src/export.ts`)
+- [x] Wire up CLI argument parsing (`src/index.ts`)
+  - [x] `--step=youtube` - Fetch only YouTube data
+  - [x] `--step=trends` - Fetch only Google Trends data
+  - [x] `--step=all` - Run all fetchers (default)
+  - [x] `--no-cache` - Disable cache reads
+  - [x] `--export` - Export results to JSON
 
 ### Phase 5: Testing & Refinement
-- [ ] Test YouTube fetcher with API key
-- [ ] Test Google Trends fetcher
-- [ ] Test caching behavior
-- [ ] Test JSON export
+- [x] Test YouTube fetcher with API key
+- [x] Test Google Trends fetcher
+- [x] Test caching behavior
+- [x] Test JSON export
 
 ---
 
