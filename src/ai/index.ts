@@ -3,6 +3,7 @@
 
 export { anthropic, DEFAULT_MODEL } from "./client";
 export * from "./prompts";
+export * from "./scoring";
 export { generateVideoIdeas } from "./generators/video-ideas";
 export { generateVideoScript } from "./generators/video-scripts";
 export { generateContentCalendar } from "./generators/content-calendar";

@@ -31,8 +31,21 @@ interface AICliArgs {
 const parseCliArgs = (): AICliArgs => {
   const command = Bun.argv[2] || "help";
 
+  // Preprocess args to handle -x=value syntax (convert to -x value)
+  const rawArgs = Bun.argv.slice(3);
+  const processedArgs: string[] = [];
+  for (const arg of rawArgs) {
+    // Match -x=value or --xxx=value
+    const match = arg.match(/^(-\w|--\w+)=(.+)$/);
+    if (match) {
+      processedArgs.push(match[1], match[2]);
+    } else {
+      processedArgs.push(arg);
+    }
+  }
+
   const { values } = parseArgs({
-    args: Bun.argv.slice(3),
+    args: processedArgs,
     options: {
       lang: {
         type: "string",
@@ -132,12 +145,17 @@ const commandIdeas = async (args: AICliArgs): Promise<void> => {
   console.log("=".repeat(60) + "\n");
 
   ideas.forEach((idea, i) => {
+    const scoreColor = idea.score >= 70 ? "\x1b[32m" : idea.score >= 40 ? "\x1b[33m" : "\x1b[31m";
+    const reset = "\x1b[0m";
     console.log(`${i + 1}. ${idea.title}`);
     console.log(`   ID: ${idea.id}`);
+    console.log(`   Score: ${scoreColor}${idea.score}/100${reset} (Trend: ${idea.scoreBreakdown.trendScore}, Engagement: ${idea.scoreBreakdown.engagementScore}, Timing: ${idea.scoreBreakdown.timingScore})`);
     console.log(`   Hook: ${idea.hook}`);
     console.log(`   Audience: ${idea.targetAudience}`);
     console.log(`   Trend: ${idea.trendSource}`);
-    console.log(`   Potential: ${idea.estimatedViews}`);
+    if (idea.outline?.format) {
+      console.log(`   Format: ${idea.outline.format} (${idea.outline.duration})`);
+    }
     console.log("");
   });
 
@@ -257,10 +275,15 @@ const commandList = async (args: AICliArgs): Promise<void> => {
   console.log(`\n💡 Video Ideas (${ideas.length} total)\n`);
   console.log("-".repeat(60));
 
-  ideas.forEach((idea, i) => {
+  // Sort by score descending
+  const sortedIdeas = [...ideas].sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  sortedIdeas.forEach((idea, i) => {
+    const scoreColor = idea.score >= 70 ? "\x1b[32m" : idea.score >= 40 ? "\x1b[33m" : "\x1b[31m";
+    const reset = "\x1b[0m";
     console.log(`${i + 1}. ${idea.title}`);
     console.log(`   ID: ${idea.id}`);
-    console.log(`   Potential: ${idea.estimatedViews} | Lang: ${idea.language}`);
+    console.log(`   Score: ${scoreColor}${idea.score || 0}/100${reset} | Lang: ${idea.language}`);
     console.log("");
   });
 };

@@ -334,6 +334,179 @@
       border-radius: 8px;
       margin-bottom: 16px;
     }
+
+    /* Score Badge Styles */
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      min-width: 60px;
+      cursor: help;
+    }
+
+    .score-high {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+    }
+
+    .score-medium {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+    }
+
+    .score-low {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    /* Score Breakdown Tooltip */
+    .score-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .score-breakdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      min-width: 200px;
+      z-index: 100;
+      margin-top: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .score-container:hover .score-breakdown {
+      display: block;
+    }
+
+    .score-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+
+    .score-breakdown-label {
+      color: var(--text-secondary);
+    }
+
+    .score-breakdown-value {
+      font-weight: 600;
+    }
+
+    .score-bar {
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .score-bar-fill.trend { background: var(--accent); }
+    .score-bar-fill.engagement { background: var(--success); }
+    .score-bar-fill.timing { background: var(--warning); }
+
+    /* Outline Section */
+    .outline-section {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .outline-section summary {
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      font-weight: 500;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .outline-section summary:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .outline-section[open] summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .outline-content {
+      padding: 14px;
+      background: var(--bg-primary);
+    }
+
+    .outline-row {
+      margin-bottom: 12px;
+    }
+
+    .outline-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .outline-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .outline-value {
+      font-size: 14px;
+    }
+
+    .outline-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .outline-list li {
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    /* Reasoning Section */
+    .reasoning-section {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .reasoning-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .reasoning-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
   </style>
 </head>
 <body>
@@ -458,6 +631,110 @@
       );
     }
 
+    // Score Badge Component with Breakdown Tooltip
+    function ScoreBadge({ score, breakdown }) {
+      const getScoreLevel = (score) => {
+        if (score >= 70) return 'high';
+        if (score >= 40) return 'medium';
+        return 'low';
+      };
+
+      return (
+        <div className="score-container">
+          <span className={`score-badge score-${getScoreLevel(score)}`}>
+            {score}/100
+          </span>
+          {breakdown && (
+            <div className="score-breakdown">
+              <div className="score-breakdown-row">
+                <span className="score-breakdown-label">Trend Score</span>
+                <span className="score-breakdown-value">{breakdown.trendScore}</span>
+              </div>
+              <div className="score-bar">
+                <div 
+                  className="score-bar-fill trend" 
+                  style={{width: `${breakdown.trendScore}%`}}
+                />
+              </div>
+              <div className="score-breakdown-row" style={{marginTop: '8px'}}>
+                <span className="score-breakdown-label">Engagement Score</span>
+                <span className="score-breakdown-value">{breakdown.engagementScore}</span>
+              </div>
+              <div className="score-bar">
+                <div 
+                  className="score-bar-fill engagement" 
+                  style={{width: `${breakdown.engagementScore}%`}}
+                />
+              </div>
+              <div className="score-breakdown-row" style={{marginTop: '8px'}}>
+                <span className="score-breakdown-label">Timing Score</span>
+                <span className="score-breakdown-value">{breakdown.timingScore}</span>
+              </div>
+              <div className="score-bar">
+                <div 
+                  className="score-bar-fill timing" 
+                  style={{width: `${breakdown.timingScore}%`}}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Video Outline Component
+    function VideoOutline({ outline }) {
+      if (!outline || !outline.mainPoints || outline.mainPoints.length === 0) {
+        return null;
+      }
+
+      return (
+        <details className="outline-section">
+          <summary>📋 Video Outline</summary>
+          <div className="outline-content">
+            {outline.format && (
+              <div className="outline-row">
+                <div className="outline-label">Format</div>
+                <div className="outline-value">{outline.format}</div>
+              </div>
+            )}
+            {outline.duration && (
+              <div className="outline-row">
+                <div className="outline-label">Duration</div>
+                <div className="outline-value">{outline.duration}</div>
+              </div>
+            )}
+            {outline.mainPoints && outline.mainPoints.length > 0 && (
+              <div className="outline-row">
+                <div className="outline-label">Main Points</div>
+                <ul className="outline-list">
+                  {outline.mainPoints.map((point, i) => (
+                    <li key={i}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {outline.callToAction && (
+              <div className="outline-row">
+                <div className="outline-label">Call to Action</div>
+                <div className="outline-value">{outline.callToAction}</div>
+              </div>
+            )}
+            {outline.bRollIdeas && outline.bRollIdeas.length > 0 && (
+              <div className="outline-row">
+                <div className="outline-label">B-Roll Ideas</div>
+                <ul className="outline-list">
+                  {outline.bRollIdeas.map((idea, i) => (
+                    <li key={i}>{idea}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
+      );
+    }
+
     // Ideas Tab
     function IdeasTab({ ideas, onRefresh, onGenerateScript }) {
       const [loading, setLoading] = useState(false);
@@ -477,6 +754,9 @@
           setLoading(false);
         }
       };
+
+      // Sort ideas by score descending
+      const sortedIdeas = [...ideas].sort((a, b) => (b.score || 0) - (a.score || 0));
 
       return (
         <div>
@@ -505,23 +785,33 @@
             <div className="card-header">
               <h3 className="card-title">💡 Video Ideas ({ideas.length})</h3>
             </div>
-            {ideas.length === 0 ? (
+            {sortedIdeas.length === 0 ? (
               <div className="empty-state">No ideas yet. Generate some above!</div>
             ) : (
-              ideas.map(idea => (
+              sortedIdeas.map(idea => (
                 <div key={idea.id} className="idea-card">
-                  <div className="idea-title">{idea.title}</div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px'}}>
+                    <div className="idea-title" style={{flex: 1, marginRight: '12px'}}>{idea.title}</div>
+                    <ScoreBadge score={idea.score || 0} breakdown={idea.scoreBreakdown} />
+                  </div>
                   <div className="idea-hook">{idea.hook}</div>
                   <div className="idea-meta">
-                    <span className={`badge badge-${idea.estimatedViews}`}>
-                      {idea.estimatedViews} potential
-                    </span>
                     <span className="badge">{idea.language.toUpperCase()}</span>
                     <span style={{color: 'var(--text-secondary)', fontSize: '12px'}}>
                       Source: {idea.trendSource}
                     </span>
                   </div>
-                  <div className="idea-actions">
+                  
+                  {idea.reasoning && (
+                    <div className="reasoning-section">
+                      <div className="reasoning-label">Why This Topic</div>
+                      <div className="reasoning-text">{idea.reasoning}</div>
+                    </div>
+                  )}
+
+                  <VideoOutline outline={idea.outline} />
+
+                  <div className="idea-actions" style={{marginTop: '12px'}}>
                     <button 
                       className="btn btn-secondary"
                       onClick={() => onGenerateScript(idea)}

@@ -105,14 +105,30 @@ export interface ExportData {
 // AI-Generated Content Types
 // ============================================================================
 
+export interface VideoIdeaOutline {
+  format: string;
+  duration: string;
+  mainPoints: string[];
+  callToAction: string;
+  bRollIdeas: string[];
+}
+
+export interface ScoreBreakdown {
+  trendScore: number;
+  engagementScore: number;
+  timingScore: number;
+}
+
 export interface VideoIdea {
   id: string;
   title: string;
   hook: string;
   targetAudience: string;
   trendSource: string;
-  estimatedViews: "low" | "medium" | "high";
+  score: number;
+  scoreBreakdown: ScoreBreakdown;
   reasoning: string;
+  outline: VideoIdeaOutline;
   language: Language;
   createdAt: string;
 }

@@ -211,7 +211,7 @@ const runAIAnalysis = async (language: Language, count: number): Promise<void> =
         console.log(`   Hook: ${idea.hook}`);
         console.log(`   Audience: ${idea.targetAudience}`);
         console.log(`   Trend: ${idea.trendSource}`);
-        console.log(`   Potential: ${idea.estimatedViews}`);
+        console.log(`   Score: ${idea.score}`);
         console.log("");
     });
 
@@ -220,4 +220,7 @@ const runAIAnalysis = async (language: Language, count: number): Promise<void> =
 };
 
 // Run
-main();
+main().catch((error) => {
+    console.error("❌ Unhandled error:", error);
+    process.exit(1);
+});
