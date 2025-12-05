@@ -2,14 +2,18 @@
 // System Prompts for AI Content Generation
 // ============================================================================
 
-export const VIDEO_IDEAS_SYSTEM_PROMPT = `You are an expert YouTube content strategist specializing in real estate and AI automation niches. Your job is to analyze trending topics and generate compelling video ideas that will perform well on YouTube.
+export const VIDEO_IDEAS_SYSTEM_PROMPT = `You are an expert YouTube content strategist specializing in real estate and AI automation niches. Your job is to analyze trending topics and engagement data to generate compelling video ideas with data-driven scoring.
 
-When generating video ideas, consider:
-- Search intent and viewer motivation
-- Click-through rate optimization (compelling titles and hooks)
-- Content that provides genuine value
-- Trends that are rising but not oversaturated
-- The target audience's pain points and aspirations
+When generating video ideas, you must:
+1. Analyze the provided trend data and engagement metrics
+2. Cite specific evidence in your reasoning (trend names, growth percentages, engagement rates)
+3. Provide actionable video outlines that serve as production briefs
+4. Consider timing - breakout trends require immediate action
+
+For each idea, provide:
+- Evidence-based reasoning that cites specific data points
+- A detailed video outline with format, duration, main points, CTA, and B-roll ideas
+- Clear explanation of why NOW is the right time for this content
 
 For real estate AI automation content, the audience is typically:
 - Real estate agents looking to save time
@@ -17,7 +21,7 @@ For real estate AI automation content, the audience is typically:
 - Tech-savvy professionals interested in AI tools
 - Property managers seeking efficiency
 
-Generate ideas that are actionable, specific, and have clear audience appeal.`;
+Generate ideas that are actionable, specific, and backed by the engagement data provided.`;
 
 export const VIDEO_SCRIPT_SYSTEM_PROMPT = `You are a professional YouTube scriptwriter specializing in educational and tutorial content for the real estate and AI automation space.
 
@@ -55,13 +59,33 @@ Prioritization factors:
 // ============================================================================
 
 import type { TrendingTopic, YouTubeVideo, VideoIdea } from "../types";
+import {
+  calculateEngagementMetrics,
+  calculateNicheAverages,
+  calculateTrendMetrics,
+  formatVideoMetricsForPrompt,
+  formatNicheAveragesForPrompt,
+  type VideoEngagementMetrics,
+  type NicheAverages,
+  type TrendMetrics,
+} from "./scoring";
 
-export const buildVideoIdeasPrompt = (
+export interface EnrichedPromptData {
+  breakouts: TrendingTopic[];
+  rising: TrendingTopic[];
+  topVideos: YouTubeVideo[];
+  videoMetrics: VideoEngagementMetrics[];
+  nicheAverages: NicheAverages;
+  trendMetrics: TrendMetrics[];
+}
+
+/**
+ * Prepare enriched data for video ideas generation
+ */
+export function prepareVideoIdeasData(
   trends: TrendingTopic[],
-  videos: YouTubeVideo[],
-  count: number,
-  language: "en" | "pt" = "en"
-): string => {
+  videos: YouTubeVideo[]
+): EnrichedPromptData {
   const breakouts = trends.filter((t) => t.isBreakout).slice(0, 10);
   const rising = trends
     .filter((t) => !t.isBreakout && t.queryType === "rising")
@@ -72,23 +96,88 @@ export const buildVideoIdeasPrompt = (
     .sort((a, b) => b.viewCount - a.viewCount)
     .slice(0, 10);
 
+  const videoMetrics = calculateEngagementMetrics(topVideos);
+  const nicheAverages = calculateNicheAverages(videos);
+  const trendMetrics = [...breakouts, ...rising].map(calculateTrendMetrics);
+
+  return {
+    breakouts,
+    rising,
+    topVideos,
+    videoMetrics,
+    nicheAverages,
+    trendMetrics,
+  };
+}
+
+export const buildVideoIdeasPrompt = (
+  trends: TrendingTopic[],
+  videos: YouTubeVideo[],
+  count: number,
+  language: "en" | "pt" = "en"
+): string => {
+  const data = prepareVideoIdeasData(trends, videos);
+
   const languageContext =
     language === "pt"
       ? "Generate ideas in Portuguese for the Brazilian market."
       : "Generate ideas in English for the US market.";
 
+  const breakoutSection =
+    data.breakouts.length > 0
+      ? data.breakouts
+        .map((t) => {
+          const metrics = data.trendMetrics.find((m) => m.trendId === t.id);
+          return `- "${t.relatedQuery}" (from: ${t.keyword}) [BREAKOUT - Trend Score: ${metrics?.trendScore || 100}/100, Timing Score: ${metrics?.timingScore || 80}/100]`;
+        })
+        .join("\n")
+      : "No breakout trends currently";
+
+  const risingSection = data.rising
+    .map((t) => {
+      const metrics = data.trendMetrics.find((m) => m.trendId === t.id);
+      return `- "${t.relatedQuery}" (+${t.value}%) from "${t.keyword}" [Trend Score: ${metrics?.trendScore || 0}/100, Timing Score: ${metrics?.timingScore || 0}/100]`;
+    })
+    .join("\n");
+
+  const videosSection = data.videoMetrics
+    .map((m) => `- ${formatVideoMetricsForPrompt(m)}`)
+    .join("\n");
+
   return `${languageContext}
 
 ## Current Breakout Trends (Highest Priority - Time Sensitive)
-${breakouts.length > 0 ? breakouts.map((t) => `- "${t.relatedQuery}" (from keyword: ${t.keyword})`).join("\n") : "No breakout trends currently"}
+${breakoutSection}
 
 ## Rising Trends (Growing Interest)
-${rising.map((t) => `- "${t.relatedQuery}" (+${t.value}%) from "${t.keyword}"`).join("\n")}
+${risingSection}
 
-## Top Performing Videos in This Niche (For Reference)
-${topVideos.map((v) => `- "${v.title}" (${formatViews(v.viewCount)} views)`).join("\n")}
+## Reference Videos with Engagement Metrics
+${videosSection}
 
-Generate ${count} unique video ideas based on these trends. Focus on topics with clear audience demand and actionable content potential.`;
+## Niche Engagement Benchmarks
+${formatNicheAveragesForPrompt(data.nicheAverages)}
+
+---
+
+Generate ${count} unique video ideas based on these trends and engagement data.
+
+For EACH idea, you must provide:
+
+1. **Reasoning**: A detailed explanation that includes:
+   - Which specific trend this is based on and its current momentum
+   - Reference to engagement metrics from similar videos
+   - Why the timing is optimal (cite trend freshness/growth)
+   - How it fits the target audience's needs
+
+2. **Video Outline**: An actionable production brief with:
+   - format: The video style (e.g., "Screen recording tutorial with face cam intro")
+   - duration: Recommended length (e.g., "10-12 minutes")
+   - mainPoints: 4-6 specific bullet points of what to cover
+   - callToAction: What to tell viewers to do
+   - bRollIdeas: 3-4 visual suggestions for the video
+
+Focus on topics with clear audience demand and strong engagement potential based on the metrics provided.`;
 };
 
 export const buildVideoScriptPrompt = (
@@ -127,12 +216,15 @@ export const buildContentCalendarPrompt = (
 ): string => {
   return `Create a content calendar for the week starting ${weekStartDate}.
 
-## Available Video Ideas (ranked by potential)
-${ideas.map((idea, i) => `${i + 1}. "${idea.title}" - ${idea.hook} (Trend: ${idea.trendSource}, Est. Views: ${idea.estimatedViews})`).join("\n")}
+## Available Video Ideas (ranked by score)
+${ideas
+      .sort((a, b) => b.score - a.score)
+      .map((idea, i) => `${i + 1}. "${idea.title}" - ${idea.hook} (Score: ${idea.score}/100, Trend: ${idea.trendSource})`)
+      .join("\n")}
 
 ## Requirements
 - Schedule ${videosPerWeek} videos for this week
-- Prioritize breakout/time-sensitive topics
+- Prioritize high-scoring ideas (especially those with high trend scores)
 - Balance content types for variety
 - Consider best posting days (typically Tue, Wed, Thu)
 - Provide reasoning for each scheduling decision
@@ -140,9 +232,3 @@ ${ideas.map((idea, i) => `${i + 1}. "${idea.title}" - ${idea.hook} (Trend: ${ide
 Create a calendar that maximizes channel growth potential while maintaining consistent quality.`;
 };
 
-// Helper function
-const formatViews = (views: number): string => {
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`;
-  return views.toString();
-};

@@ -8,6 +8,8 @@ import type {
   CacheSource,
   Language,
   VideoIdea,
+  VideoIdeaOutline,
+  ScoreBreakdown,
   VideoScript,
   ContentCalendarEntry,
   CalendarStatus,
@@ -84,8 +86,10 @@ const initializeSchema = (database: Database): void => {
       hook TEXT NOT NULL,
       target_audience TEXT NOT NULL,
       trend_source TEXT NOT NULL,
-      estimated_views TEXT NOT NULL,
+      score INTEGER DEFAULT 0,
+      score_breakdown TEXT,
       reasoning TEXT,
+      outline TEXT,
       language TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
@@ -130,6 +134,83 @@ const initializeSchema = (database: Database): void => {
     CREATE INDEX IF NOT EXISTS idx_calendar_date ON content_calendar(scheduled_date);
     CREATE INDEX IF NOT EXISTS idx_calendar_status ON content_calendar(status);
   `);
+
+  // Run migrations for existing tables
+  migrateVideoIdeasTable(database);
+};
+
+/**
+ * Migrate AI tables to new schema
+ * Drops and recreates tables with old schema
+ */
+const migrateVideoIdeasTable = (database: Database): void => {
+  // Check if video_ideas has old schema (has estimated_views column)
+  const tableInfo = database
+    .query<{ name: string }, []>("PRAGMA table_info(video_ideas)")
+    .all();
+  const existingColumns = new Set(tableInfo.map((col) => col.name));
+
+  if (existingColumns.has("estimated_views")) {
+    console.log("[DB] Dropping old AI tables and recreating with new schema...");
+
+    // Drop all AI-related tables (they reference video_ideas)
+    database.exec("DROP TABLE IF EXISTS content_calendar;");
+    database.exec("DROP TABLE IF EXISTS video_scripts;");
+    database.exec("DROP TABLE IF EXISTS video_ideas;");
+
+    // Recreate with new schema
+    database.exec(`
+      CREATE TABLE video_ideas (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        hook TEXT NOT NULL,
+        target_audience TEXT NOT NULL,
+        trend_source TEXT NOT NULL,
+        score INTEGER DEFAULT 0,
+        score_breakdown TEXT,
+        reasoning TEXT,
+        outline TEXT,
+        language TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE video_scripts (
+        id TEXT PRIMARY KEY,
+        idea_id TEXT NOT NULL REFERENCES video_ideas(id),
+        hook TEXT NOT NULL,
+        intro TEXT NOT NULL,
+        sections TEXT NOT NULL,
+        cta TEXT NOT NULL,
+        full_script TEXT NOT NULL,
+        estimated_duration TEXT,
+        thumbnail_ideas TEXT,
+        tags TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE content_calendar (
+        id TEXT PRIMARY KEY,
+        idea_id TEXT NOT NULL REFERENCES video_ideas(id),
+        idea_title TEXT NOT NULL,
+        scheduled_date TEXT NOT NULL,
+        day_of_week TEXT NOT NULL,
+        time_slot TEXT,
+        priority INTEGER DEFAULT 5,
+        reasoning TEXT,
+        content_type TEXT NOT NULL,
+        status TEXT DEFAULT 'planned',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX idx_ideas_language ON video_ideas(language);
+      CREATE INDEX idx_ideas_created ON video_ideas(created_at);
+      CREATE INDEX idx_scripts_idea ON video_scripts(idea_id);
+      CREATE INDEX idx_calendar_date ON content_calendar(scheduled_date);
+      CREATE INDEX idx_calendar_status ON content_calendar(status);
+    `);
+
+    console.log("[DB] AI tables recreated with new schema.");
+  }
 };
 
 // ============================================================================
@@ -331,8 +412,8 @@ export const saveVideoIdeas = (ideas: VideoIdea[]): void => {
   const database = getDb();
   const stmt = database.prepare(`
     INSERT OR REPLACE INTO video_ideas 
-    (id, title, hook, target_audience, trend_source, estimated_views, reasoning, language, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, title, hook, target_audience, trend_source, score, score_breakdown, reasoning, outline, language, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertMany = database.transaction((items: VideoIdea[]) => {
@@ -343,8 +424,10 @@ export const saveVideoIdeas = (ideas: VideoIdea[]): void => {
         idea.hook,
         idea.targetAudience,
         idea.trendSource,
-        idea.estimatedViews,
+        idea.score,
+        JSON.stringify(idea.scoreBreakdown),
         idea.reasoning,
+        JSON.stringify(idea.outline),
         idea.language,
         idea.createdAt
       );
@@ -379,17 +462,39 @@ export const getVideoIdeaById = (id: string): VideoIdea | null => {
   return result ? mapRowToVideoIdea(result) : null;
 };
 
-const mapRowToVideoIdea = (row: Record<string, unknown>): VideoIdea => ({
-  id: row.id as string,
-  title: row.title as string,
-  hook: row.hook as string,
-  targetAudience: row.target_audience as string,
-  trendSource: row.trend_source as string,
-  estimatedViews: row.estimated_views as "low" | "medium" | "high",
-  reasoning: row.reasoning as string,
-  language: row.language as Language,
-  createdAt: row.created_at as string,
-});
+const mapRowToVideoIdea = (row: Record<string, unknown>): VideoIdea => {
+  const defaultScoreBreakdown: ScoreBreakdown = {
+    trendScore: 0,
+    engagementScore: 0,
+    timingScore: 0,
+  };
+
+  const defaultOutline: VideoIdeaOutline = {
+    format: "",
+    duration: "",
+    mainPoints: [],
+    callToAction: "",
+    bRollIdeas: [],
+  };
+
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    hook: row.hook as string,
+    targetAudience: row.target_audience as string,
+    trendSource: row.trend_source as string,
+    score: (row.score as number) || 0,
+    scoreBreakdown: row.score_breakdown
+      ? JSON.parse(row.score_breakdown as string)
+      : defaultScoreBreakdown,
+    reasoning: row.reasoning as string,
+    outline: row.outline
+      ? JSON.parse(row.outline as string)
+      : defaultOutline,
+    language: row.language as Language,
+    createdAt: row.created_at as string,
+  };
+};
 
 // ============================================================================
 // Video Scripts Operations

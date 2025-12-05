@@ -65,6 +65,22 @@ export const fetchGoogleTrends = async (
 
     try {
       const results = await fetchRelatedQueries(keyword, geo, hl);
+      const rankedList = results.default?.rankedList || [];
+
+      if (rankedList.length === 0) {
+        console.log(`[Trends] No related queries found for "${keyword}" (${language})`);
+        await sleep(1000);
+        continue;
+      }
+
+      // Debug: log structure of response
+      const queryCountsPerList = rankedList.map((list, idx) => {
+        const count = list.rankedKeyword?.length || 0;
+        return `list[${idx}]: ${count}`;
+      });
+      if (queryCountsPerList.every(q => q.includes(': 0'))) {
+        console.log(`[Trends] Empty query lists for "${keyword}" (${language}) - ${queryCountsPerList.join(', ')}`);
+      }
 
       // Process rising queries
       const risingQueries = extractQueries(results, "rising");
@@ -92,6 +108,10 @@ export const fetchGoogleTrends = async (
           fetchedAt
         );
         allTopics.push(topic);
+      }
+
+      if (risingQueries.length > 0 || topQueries.length > 0) {
+        console.log(`[Trends] Found ${risingQueries.length} rising + ${topQueries.length} top queries for "${keyword}"`);
       }
 
       // Delay to avoid rate limiting (Google Trends is more sensitive)
@@ -159,7 +179,31 @@ const extractQueries = (
 ): RelatedQuery[] => {
   const rankedList = results.default?.rankedList || [];
 
-  // Rising is typically at index 1, Top at index 0
+  if (rankedList.length === 0) {
+    return [];
+  }
+
+  // Google Trends API returns lists in variable order
+  // Rising queries have formattedValue like "+500%" or "Breakout"
+  // Top queries have numeric values only
+  // Try to find the right list by checking the data characteristics
+  for (const list of rankedList) {
+    const queries = list.rankedKeyword || [];
+    if (queries.length === 0) continue;
+
+    const firstQuery = queries[0];
+    const hasPercentage = firstQuery.formattedValue?.includes('%') ||
+      firstQuery.formattedValue?.toLowerCase().includes('breakout');
+
+    if (type === "rising" && hasPercentage) {
+      return queries.slice(0, 20);
+    }
+    if (type === "top" && !hasPercentage) {
+      return queries.slice(0, 20);
+    }
+  }
+
+  // Fallback to original index-based approach
   const listIndex = type === "rising" ? 1 : 0;
   const queries = rankedList[listIndex]?.rankedKeyword || [];
 
