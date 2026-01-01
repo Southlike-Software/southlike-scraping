@@ -507,6 +507,130 @@
       line-height: 1.5;
       color: var(--text-primary);
     }
+
+    /* Video Grid Styles */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .video-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .video-thumbnail {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 aspect ratio */
+      background: var(--bg-tertiary);
+      overflow: hidden;
+    }
+
+    .video-thumbnail img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-card-content {
+      padding: 16px;
+    }
+
+    .video-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .video-title a {
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .video-title a:hover {
+      color: var(--accent);
+    }
+
+    .video-channel {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .video-metrics {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .video-metric {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .video-metric-icon {
+      font-size: 14px;
+    }
+
+    .video-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    /* Search Input Styles */
+    .search-input {
+      padding: 10px 14px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      min-width: 250px;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .videos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .results-count {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -732,6 +856,154 @@
             )}
           </div>
         </details>
+      );
+    }
+
+    // Format number with K/M suffix
+    function formatNumber(num) {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      }
+      if (num >= 1000) {
+        return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      }
+      return num.toString();
+    }
+
+    // Format relative time
+    function formatRelativeTime(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      return `${Math.floor(diffDays / 365)} years ago`;
+    }
+
+    // Video Card Component
+    function VideoCard({ video }) {
+      const youtubeUrl = `https://www.youtube.com/watch?v=${video.id}`;
+      
+      return (
+        <div className="video-card">
+          <a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+            <div className="video-thumbnail">
+              <img 
+                src={video.thumbnailUrl} 
+                alt={video.title}
+                loading="lazy"
+              />
+            </div>
+          </a>
+          <div className="video-card-content">
+            <div className="video-title">
+              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+                {video.title}
+              </a>
+            </div>
+            <div className="video-channel">{video.channelTitle}</div>
+            <div className="video-metrics">
+              <span className="video-metric">
+                <span className="video-metric-icon">👁</span>
+                {formatNumber(video.viewCount)}
+              </span>
+              <span className="video-metric">
+                <span className="video-metric-icon">👍</span>
+                {formatNumber(video.likeCount)}
+              </span>
+              <span className="video-metric">
+                <span className="video-metric-icon">💬</span>
+                {formatNumber(video.commentCount)}
+              </span>
+            </div>
+            <div className="video-date">{formatRelativeTime(video.publishedAt)}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Videos Tab
+    function VideosTab({ videos }) {
+      const [searchQuery, setSearchQuery] = useState('');
+      const [sortBy, setSortBy] = useState('viewCount');
+      const [language, setLanguage] = useState('all');
+
+      // Filter videos by search query and language
+      const filteredVideos = videos.filter(video => {
+        const matchesSearch = searchQuery === '' || 
+          video.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesLanguage = language === 'all' || video.language === language;
+        return matchesSearch && matchesLanguage;
+      });
+
+      // Sort videos
+      const sortedVideos = [...filteredVideos].sort((a, b) => {
+        switch (sortBy) {
+          case 'viewCount':
+            return b.viewCount - a.viewCount;
+          case 'likeCount':
+            return b.likeCount - a.likeCount;
+          case 'commentCount':
+            return b.commentCount - a.commentCount;
+          case 'publishedAt':
+            return new Date(b.publishedAt) - new Date(a.publishedAt);
+          default:
+            return 0;
+        }
+      });
+
+      return (
+        <div>
+          <div className="card">
+            <div className="videos-header">
+              <h3 className="card-title">📺 Scraped Videos</h3>
+              <span className="results-count">
+                {sortedVideos.length} of {videos.length} videos
+              </span>
+            </div>
+            <div className="filter-bar">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search videos by title..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="viewCount">Sort by Views</option>
+                <option value="likeCount">Sort by Likes</option>
+                <option value="commentCount">Sort by Comments</option>
+                <option value="publishedAt">Sort by Date</option>
+              </select>
+              <select value={language} onChange={e => setLanguage(e.target.value)}>
+                <option value="all">All Languages</option>
+                <option value="en">English (US)</option>
+                <option value="pt">Portuguese (BR)</option>
+              </select>
+            </div>
+          </div>
+
+          {sortedVideos.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                {videos.length === 0 
+                  ? 'No videos scraped yet. Run the scraper first!' 
+                  : 'No videos match your search criteria.'}
+              </div>
+            </div>
+          ) : (
+            <div className="video-grid">
+              {sortedVideos.map(video => (
+                <VideoCard key={video.id} video={video} />
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
 
@@ -1055,6 +1327,12 @@
               📈 Trends
             </button>
             <button 
+              className={`tab ${activeTab === 'videos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('videos')}
+            >
+              📺 Videos
+            </button>
+            <button 
               className={`tab ${activeTab === 'ideas' ? 'active' : ''}`}
               onClick={() => setActiveTab('ideas')}
             >
@@ -1089,6 +1367,9 @@
               language={language} 
               setLanguage={setLanguage} 
             />
+          )}
+          {activeTab === 'videos' && (
+            <VideosTab videos={videos} />
           )}
           {activeTab === 'ideas' && (
             <IdeasTab 
