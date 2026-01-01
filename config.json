@@ -1,18 +1,38 @@
 {
   "youtube": {
     "categories": [
-      "real estate",
-      "real estate marketing",
-      "AI automation real estate",
-      "real estate agent tips",
-      "property management automation"
+      "real estate ai",
+      "ai for real estate agents",
+      "real estate lead generation ai",
+      "ai follow up real estate",
+      "real estate crm automation",
+      "chatgpt real estate scripts",
+      "ai listing description generator",
+      "ai video ads real estate",
+      "ai cold calling real estate",
+      "real estate drip campaigns ai",
+      "ai property management automation",
+      "ai for real estate broker",
+      "real estate marketing automation",
+      "zillow leads automation",
+      "realtor ai tools",
+      "ai appointment setting real estate"
     ],
     "categoriesPt": [
-      "imobiliária",
-      "marketing imobiliário",
-      "automação imobiliária",
-      "corretor de imóveis",
-      "gestão imobiliária IA"
+      "ia para corretores de imóveis",
+      "geração de leads imobiliário ia",
+      "follow up imobiliário automático",
+      "automação crm imobiliário",
+      "chatgpt para imóveis",
+      "descrição de imóvel com ia",
+      "anúncios imobiliários com ia",
+      "prospecção imobiliária com ia",
+      "agendamento automático imobiliário",
+      "ferramentas ia corretor",
+      "automação marketing imobiliário",
+      "gestão de locação com ia",
+      "tour virtual ia imobiliária",
+      "captação de imóveis com ia"
     ],
     "maxResults": 50,
     "regionCodes": {
@@ -22,18 +42,33 @@
   },
   "trends": {
     "keywords": [
-      "real estate AI",
-      "AI automation agency",
-      "real estate marketing",
-      "property management software",
-      "real estate lead generation"
+      "real estate ai",
+      "real estate marketing automation",
+      "real estate lead generation ai",
+      "ai follow up real estate",
+      "real estate crm automation",
+      "ai listing description",
+      "chatgpt real estate",
+      "ai property management",
+      "automated real estate ads",
+      "real estate drip campaigns",
+      "real estate appointment setter",
+      "real estate sms automation",
+      "real estate cold calling ai"
     ],
     "keywordsPt": [
-      "comprar imóvel",
-      "mercado imobiliário",
-      "marketing imobiliário",
-      "corretor de imóveis",
-      "investimento imobiliário"
+      "ia imobiliária",
+      "automação marketing imobiliário",
+      "geração de leads imobiliário",
+      "follow up imobiliário",
+      "automação crm imobiliário",
+      "descrição de imóveis ia",
+      "chatgpt imóveis",
+      "gestão de locação ia",
+      "anúncios imobiliários automáticos",
+      "campanhas imobiliárias ia",
+      "agendamento imobiliário automático",
+      "sms imobiliário automático"
     ],
     "geo": {
       "en": "US",

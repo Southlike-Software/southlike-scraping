@@ -1,4 +1,4 @@
-import googleTrends from "google-trends-api";
+import { getJson } from "serpapi";
 import type { TrendingTopic, Language } from "../types";
 import { getConfig } from "../config";
 import {
@@ -17,19 +17,20 @@ interface FetchOptions {
   noCache?: boolean;
 }
 
-interface RelatedQuery {
+interface SerpAPIRelatedQuery {
   query: string;
-  value?: number;
-  formattedValue?: string;
+  value: string;
+  extracted_value: number;
   link?: string;
+  serpapi_link?: string;
 }
 
-interface RelatedQueriesResult {
-  default?: {
-    rankedList?: Array<{
-      rankedKeyword?: RelatedQuery[];
-    }>;
+interface SerpAPIRelatedQueriesResponse {
+  related_queries?: {
+    rising?: SerpAPIRelatedQuery[];
+    top?: SerpAPIRelatedQuery[];
   };
+  error?: string;
 }
 
 // ============================================================================
@@ -48,6 +49,13 @@ export const fetchGoogleTrends = async (
     return getTrendingTopics(language);
   }
 
+  // Check for API key
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) {
+    console.error("[Trends] SERPAPI_KEY environment variable is not set");
+    throw new Error("SERPAPI_KEY is required for Google Trends fetching");
+  }
+
   console.log(`[Trends] Fetching fresh data for ${language}...`);
 
   const config = getConfig();
@@ -64,27 +72,19 @@ export const fetchGoogleTrends = async (
     console.log(`[Trends] Fetching related queries for: "${keyword}"`);
 
     try {
-      const results = await fetchRelatedQueries(keyword, geo, hl);
-      const rankedList = results.default?.rankedList || [];
+      const results = await fetchRelatedQueries(keyword, geo, hl, apiKey);
 
-      if (rankedList.length === 0) {
-        console.log(`[Trends] No related queries found for "${keyword}" (${language})`);
-        await sleep(1000);
+      const { rising = [], top = [] } = results.related_queries || {};
+
+      if (rising.length === 0 && top.length === 0) {
+        console.log(
+          `[Trends] No related queries found for "${keyword}" (${language}) - low search volume`
+        );
         continue;
       }
 
-      // Debug: log structure of response
-      const queryCountsPerList = rankedList.map((list, idx) => {
-        const count = list.rankedKeyword?.length || 0;
-        return `list[${idx}]: ${count}`;
-      });
-      if (queryCountsPerList.every(q => q.includes(': 0'))) {
-        console.log(`[Trends] Empty query lists for "${keyword}" (${language}) - ${queryCountsPerList.join(', ')}`);
-      }
-
       // Process rising queries
-      const risingQueries = extractQueries(results, "rising");
-      for (const query of risingQueries) {
+      for (const query of rising.slice(0, 20)) {
         const topic = createTrendingTopic(
           keyword,
           query,
@@ -97,8 +97,7 @@ export const fetchGoogleTrends = async (
       }
 
       // Process top queries
-      const topQueries = extractQueries(results, "top");
-      for (const query of topQueries) {
+      for (const query of top.slice(0, 20)) {
         const topic = createTrendingTopic(
           keyword,
           query,
@@ -110,12 +109,14 @@ export const fetchGoogleTrends = async (
         allTopics.push(topic);
       }
 
-      if (risingQueries.length > 0 || topQueries.length > 0) {
-        console.log(`[Trends] Found ${risingQueries.length} rising + ${topQueries.length} top queries for "${keyword}"`);
+      if (rising.length > 0 || top.length > 0) {
+        console.log(
+          `[Trends] Found ${rising.length} rising + ${top.length} top queries for "${keyword}"`
+        );
       }
 
-      // Delay to avoid rate limiting (Google Trends is more sensitive)
-      await sleep(1000);
+      // Small delay between requests to be respectful to the API
+      await sleep(500);
     } catch (error) {
       console.error(`[Trends] Error fetching "${keyword}":`, error);
       // Continue with next keyword
@@ -157,57 +158,29 @@ export const fetchAllGoogleTrends = async (
 const fetchRelatedQueries = async (
   keyword: string,
   geo: string,
-  hl: string
-): Promise<RelatedQueriesResult> => {
-  const startTime = getDateMonthsAgo(12);
-  const endTime = new Date();
-
-  const result = await googleTrends.relatedQueries({
-    keyword,
+  hl: string,
+  apiKey: string
+): Promise<SerpAPIRelatedQueriesResponse> => {
+  const result = await getJson({
+    engine: "google_trends",
+    q: keyword,
+    data_type: "RELATED_QUERIES",
     geo,
     hl,
-    startTime,
-    endTime,
+    api_key: apiKey,
   });
 
-  return JSON.parse(result) as RelatedQueriesResult;
-};
-
-const extractQueries = (
-  results: RelatedQueriesResult,
-  type: "rising" | "top"
-): RelatedQuery[] => {
-  const rankedList = results.default?.rankedList || [];
-
-  if (rankedList.length === 0) {
-    return [];
+  // "No results" is not an error - just means low search volume for that keyword
+  if (result.error) {
+    const errorMsg = String(result.error).toLowerCase();
+    if (errorMsg.includes("hasn't returned any results")) {
+      // Return empty response for keywords with no data
+      return { related_queries: { rising: [], top: [] } };
+    }
+    throw new Error(`SerpAPI error: ${result.error}`);
   }
 
-  // Google Trends API returns lists in variable order
-  // Rising queries have formattedValue like "+500%" or "Breakout"
-  // Top queries have numeric values only
-  // Try to find the right list by checking the data characteristics
-  for (const list of rankedList) {
-    const queries = list.rankedKeyword || [];
-    if (queries.length === 0) continue;
-
-    const firstQuery = queries[0];
-    const hasPercentage = firstQuery.formattedValue?.includes('%') ||
-      firstQuery.formattedValue?.toLowerCase().includes('breakout');
-
-    if (type === "rising" && hasPercentage) {
-      return queries.slice(0, 20);
-    }
-    if (type === "top" && !hasPercentage) {
-      return queries.slice(0, 20);
-    }
-  }
-
-  // Fallback to original index-based approach
-  const listIndex = type === "rising" ? 1 : 0;
-  const queries = rankedList[listIndex]?.rankedKeyword || [];
-
-  return queries.slice(0, 20); // Limit to top 20
+  return result as SerpAPIRelatedQueriesResponse;
 };
 
 // ============================================================================
@@ -216,28 +189,21 @@ const extractQueries = (
 
 const createTrendingTopic = (
   keyword: string,
-  query: RelatedQuery,
+  query: SerpAPIRelatedQuery,
   queryType: "rising" | "top",
   language: Language,
   geo: string,
   fetchedAt: string
 ): TrendingTopic => {
-  const isBreakout = (query.formattedValue?.toLowerCase() ?? "").includes(
-    "breakout"
-  );
+  // Check if it's a breakout query (value contains "Breakout")
+  const isBreakout = query.value.toLowerCase().includes("breakout");
 
-  // Parse value - could be a number or "Breakout"
-  let value = 0;
-  if (typeof query.value === "number") {
-    value = query.value;
-  } else if (query.formattedValue && !isBreakout) {
-    // Try to parse percentage like "+5,000%"
-    const match = query.formattedValue.match(/[\d,]+/);
-    if (match) {
-      value = parseInt(match[0].replace(/,/g, ""), 10);
-    }
-  } else if (isBreakout) {
-    value = 10000; // High value for breakout queries
+  // Use extracted_value which is already a number
+  let value = query.extracted_value || 0;
+
+  // If breakout, assign a high value
+  if (isBreakout) {
+    value = 10000;
   }
 
   // Generate unique ID
@@ -272,12 +238,5 @@ const generateId = (
 // Utility Functions
 // ============================================================================
 
-const getDateMonthsAgo = (months: number): Date => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - months);
-  return date;
-};
-
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
-

@@ -98,6 +98,7 @@ AI COMMANDS:
 
 ENVIRONMENT:
   YOUTUBE_API_KEY      Required for YouTube Data API access
+  SERPAPI_KEY          Required for Google Trends data via SerpAPI
   ANTHROPIC_API_KEY    Required for AI analysis features
 
 CACHE:
